@@ -8,11 +8,41 @@ public struct IslandDockApp: App {
 
   public var body: some Scene {
     MenuBarExtra(delegate.menuTitle, systemImage: delegate.menuSymbol) {
-      Button(delegate.showLabel) { delegate.showIsland() }
-      Divider()
-      Button(delegate.quitLabel) { NSApp.terminate(nil) }
-        .keyboardShortcut("q")
+      IslandMenu(
+        showLabel: delegate.showLabel,
+        settingsLabel: delegate.settingsLabel,
+        settingsShortcut: delegate.settingsShortcut,
+        quitLabel: delegate.quitLabel,
+        onShow: { delegate.showIsland() }
+      )
     }
+
+    Settings {
+      if let model = delegate.settingsModel {
+        SettingsView(model: model)
+      }
+    }
+  }
+}
+
+private struct IslandMenu: View {
+  @Environment(\.openSettings) private var openSettings
+  let showLabel: String
+  let settingsLabel: String
+  let settingsShortcut: String
+  let quitLabel: String
+  let onShow: () -> Void
+
+  var body: some View {
+    Button(showLabel, action: onShow)
+    Button(settingsLabel) {
+      NSApp.activate()
+      openSettings()
+    }
+    .keyboardShortcut(KeyEquivalent(settingsShortcut.first ?? Character(",")))
+    Divider()
+    Button(quitLabel) { NSApp.terminate(nil) }
+      .keyboardShortcut("q")
   }
 }
 
@@ -20,6 +50,7 @@ public struct IslandDockApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
   private let loaded: LoadedApp?
   private let failure: String?
+  private(set) var settingsModel: SettingsModel?
   private var runtime: Runtime?
 
   override init() {
@@ -27,9 +58,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     case .success(let loaded):
       self.loaded = loaded
       self.failure = nil
+      self.settingsModel = SettingsModel(loaded: loaded)
     case .failure(let error):
       self.loaded = nil
       self.failure = error.localizedDescription
+      self.settingsModel = nil
     }
     super.init()
   }
@@ -37,6 +70,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   var menuTitle: String { loaded?.config.appName ?? "Island Dock" }
   var menuSymbol: String { loaded?.config.statusSymbol ?? "capsule" }
   var showLabel: String { loaded?.config.commands.show ?? "Show" }
+  var settingsLabel: String { loaded?.config.settings.menu ?? "Settings…" }
+  var settingsShortcut: String { loaded?.config.settings.shortcut ?? "," }
   var quitLabel: String { loaded?.config.commands.quit ?? "Quit" }
 
   func applicationWillFinishLaunching(_ notification: Notification) {

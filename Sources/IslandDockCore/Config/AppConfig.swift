@@ -13,6 +13,8 @@ struct AppConfig: Codable, Equatable, Sendable {
   var snippets: SnippetsConfig
   var todo: TodoConfig
   var commands: CommandConfig
+  var settings: SettingsConfig
+  var language: LanguageConfig
 
   func validate(knownModuleIDs: Set<String>) throws {
     func check(_ condition: Bool, _ field: String) throws {
@@ -61,6 +63,19 @@ struct AppConfig: Codable, Equatable, Sendable {
         && !commands.pinSymbol.isEmpty && !commands.unpinSymbol.isEmpty,
       "commands"
     )
+    try check(
+      !settings.title.isEmpty && !settings.languageTitle.isEmpty && !settings.menu.isEmpty
+        && settings.shortcut.count == 1 && settings.width > 0 && settings.padding >= 0,
+      "settings"
+    )
+    let languageIDs = language.options.map(\.id)
+    try check(!languageIDs.isEmpty && Set(languageIDs).count == languageIDs.count, "language.options")
+    try check(language.options.allSatisfy { Self.isAvailableLanguage($0.id) && !$0.label.isEmpty }, "language.options")
+    try check(languageIDs.contains(language.selected), "language.selected")
+  }
+
+  private static func isAvailableLanguage(_ id: String) -> Bool {
+    Locale.availableIdentifiers.contains(id)
   }
 
   private static func isSafeName(_ name: String) -> Bool {
@@ -125,6 +140,25 @@ struct TodoConfig: Codable, Equatable, Sendable {
   var empty: String
   var add: String
   var placeholder: String
+}
+
+struct SettingsConfig: Codable, Equatable, Sendable {
+  var title: String
+  var languageTitle: String
+  var menu: String
+  var shortcut: String
+  var width: CGFloat
+  var padding: CGFloat
+}
+
+struct LanguageOption: Codable, Equatable, Sendable, Identifiable {
+  var id: String
+  var label: String
+}
+
+struct LanguageConfig: Codable, Equatable, Sendable {
+  var selected: String
+  var options: [LanguageOption]
 }
 
 struct CommandConfig: Codable, Equatable, Sendable {

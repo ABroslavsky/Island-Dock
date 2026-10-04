@@ -53,5 +53,20 @@
     "unpin": "Unpin",
     "pinSymbol": "pin",
     "unpinSymbol": "pin.fill"
+  },
+  "settings": {
+    "title": "Settings",
+    "languageTitle": "Language",
+    "menu": "Settings…",
+    "shortcut": ",",
+    "width": 360,
+    "padding": 20
+  },
+  "language": {
+    "selected": "en",
+    "options": [
+      { "id": "en", "label": "English" },
+      { "id": "ru", "label": "Русский" }
+    ]
   }
 }

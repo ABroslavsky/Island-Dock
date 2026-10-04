@@ -9,6 +9,30 @@ struct ConfigStoreTests {
     #expect(config.modules.map(\.id) == [ModuleID.timer, ModuleID.snippets, ModuleID.todo])
     #expect(config.timer.defaultSeconds == 1500)
     #expect(config.timer.presetSeconds == [900, 1500, 3000])
+    #expect(config.language.selected == "en")
+    #expect(config.language.options.map(\.id) == ["en", "ru"])
+  }
+
+  @Test func oldConfigReceivesLanguageFromDefaults() throws {
+    try withTempDirectory { root in
+      let first = try ConfigStore.load(directoryRoot: root)
+      let url = first.directory.appending(path: first.config.configFileName)
+      var object = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+      object.removeValue(forKey: "language")
+      object.removeValue(forKey: "settings")
+      try JSONSerialization.data(withJSONObject: object).write(to: url, options: .atomic)
+      let second = try ConfigStore.load(directoryRoot: root)
+      #expect(second.config.language.selected == "en")
+      #expect(second.config.settings.menu == "Settings…")
+    }
+  }
+
+  @Test func unknownLanguageIsRejected() throws {
+    var config = try sampleConfig()
+    config.language.selected = "not-a-language"
+    #expect(throws: ConfigError.self) {
+      try config.validate(knownModuleIDs: ModuleID.all)
+    }
   }
 
   @Test func userFileOverridesChromeButNotStorageLocation() throws {

@@ -30,7 +30,7 @@ enum ConfigStore {
 
     let config: AppConfig
     if FileManager.default.fileExists(atPath: userURL.path) {
-      config = try decodeUser(at: userURL, anchoringTo: defaults)
+      config = try decodeUser(at: userURL, defaultsData: defaultsData, anchoringTo: defaults)
     } else {
       try defaultsData.write(to: userURL, options: .atomic)
       config = defaults
@@ -38,11 +38,27 @@ enum ConfigStore {
     return LoadedApp(config: config, directory: directory)
   }
 
-  private static func decodeUser(at url: URL, anchoringTo defaults: AppConfig) throws -> AppConfig {
-    var config = try JSONDecoder.island.decode(AppConfig.self, from: Data(contentsOf: url))
+  static func save(_ config: AppConfig, to url: URL) throws {
+    try JSONEncoder.island.encode(config).write(to: url, options: .atomic)
+  }
+
+  private static func decodeUser(at url: URL, defaultsData: Data, anchoringTo defaults: AppConfig) throws -> AppConfig {
+    let filled = try fillingMissingTopLevelKeys(in: Data(contentsOf: url), from: defaultsData)
+    var config = try JSONDecoder.island.decode(AppConfig.self, from: filled)
     config.storageDirectoryName = defaults.storageDirectoryName
     config.configFileName = defaults.configFileName
     try config.validate(knownModuleIDs: ModuleID.all)
     return config
+  }
+
+  private static func fillingMissingTopLevelKeys(in user: Data, from defaults: Data) throws -> Data {
+    guard var userObject = try JSONSerialization.jsonObject(with: user) as? [String: Any],
+          let defaultsObject = try JSONSerialization.jsonObject(with: defaults) as? [String: Any] else {
+      throw ConfigError.invalid("json")
+    }
+    for (key, value) in defaultsObject where userObject[key] == nil {
+      userObject[key] = value
+    }
+    return try JSONSerialization.data(withJSONObject: userObject)
   }
 }
