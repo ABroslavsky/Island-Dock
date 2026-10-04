@@ -9,10 +9,8 @@ public struct IslandDockApp: App {
   public var body: some Scene {
     MenuBarExtra(delegate.menuTitle, systemImage: delegate.menuSymbol) {
       IslandMenu(
-        showLabel: delegate.showLabel,
-        settingsLabel: delegate.settingsLabel,
+        settings: delegate.settingsModel,
         settingsShortcut: delegate.settingsShortcut,
-        quitLabel: delegate.quitLabel,
         onShow: { delegate.showIsland() }
       )
     }
@@ -27,21 +25,21 @@ public struct IslandDockApp: App {
 
 private struct IslandMenu: View {
   @Environment(\.openSettings) private var openSettings
-  let showLabel: String
-  let settingsLabel: String
+  var settings: SettingsModel?
   let settingsShortcut: String
-  let quitLabel: String
   let onShow: () -> Void
 
+  private var locale: Locale { settings?.locale ?? Locale(identifier: "en") }
+
   var body: some View {
-    Button(showLabel, action: onShow)
-    Button(settingsLabel) {
+    Button(L10n.text("menu.show", locale: locale), action: onShow)
+    Button(L10n.text("menu.settings", locale: locale)) {
       NSApp.activate()
       openSettings()
     }
     .keyboardShortcut(KeyEquivalent(settingsShortcut.first ?? Character(",")))
     Divider()
-    Button(quitLabel) { NSApp.terminate(nil) }
+    Button(L10n.text("menu.quit", locale: locale)) { NSApp.terminate(nil) }
       .keyboardShortcut("q")
   }
 }
@@ -69,10 +67,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
   var menuTitle: String { loaded?.config.appName ?? "Island Dock" }
   var menuSymbol: String { loaded?.config.statusSymbol ?? "capsule" }
-  var showLabel: String { loaded?.config.commands.show ?? "Show" }
-  var settingsLabel: String { loaded?.config.settings.menu ?? "Settings…" }
   var settingsShortcut: String { loaded?.config.settings.shortcut ?? "," }
-  var quitLabel: String { loaded?.config.commands.quit ?? "Quit" }
 
   func applicationWillFinishLaunching(_ notification: Notification) {
     NSApp.setActivationPolicy(.accessory)
@@ -80,12 +75,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     NSApp.setActivationPolicy(.accessory)
-    guard let loaded else {
+    guard let loaded, let settingsModel else {
       present(message: failure ?? ConfigError.missingDefaults.description)
       return
     }
     do {
-      runtime = try Runtime(loaded: loaded)
+      runtime = try Runtime(loaded: loaded, settings: settingsModel)
       runtime?.start()
     } catch {
       present(message: error.localizedDescription)
@@ -109,16 +104,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 private final class Runtime {
   private let controller: IslandPanelController
 
-  init(loaded: LoadedApp) throws {
+  init(loaded: LoadedApp, settings: SettingsModel) throws {
     let config = loaded.config
     let timer = try TimerModel(config: config.timer, url: loaded.directory.appending(path: config.files.timer))
     let snippets = try SnippetStore(url: loaded.directory.appending(path: config.files.snippets))
     let todos = try TodoStore(url: loaded.directory.appending(path: config.files.todos))
-    let modules = ModuleCatalog.make(config: config, timer: timer, snippets: snippets, todos: todos)
+    let modules = ModuleCatalog.make(
+      config: config,
+      settings: settings,
+      timer: timer,
+      snippets: snippets,
+      todos: todos
+    )
     let model = IslandModel(session: IslandSession(moduleIDs: modules.map(\.id)), config: config)
     controller = IslandPanelController(
       model: model,
       modules: modules,
+      settings: settings,
       metrics: config.chrome.frameMetrics,
       hoverDelay: config.chrome.hoverOpenDelay
     )

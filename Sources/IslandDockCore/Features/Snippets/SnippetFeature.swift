@@ -65,7 +65,7 @@ struct SnippetsCompact: View {
 
 struct SnippetsExpanded: View {
   let model: SnippetStore
-  let text: SnippetsConfig
+  var settings: SettingsModel
   @State private var title = ""
   @State private var bodyText = ""
   @State private var copiedID: UUID?
@@ -73,14 +73,14 @@ struct SnippetsExpanded: View {
   var body: some View {
     VStack(spacing: 8) {
       HStack {
-        TextField(text.titlePlaceholder, text: $title)
-        TextField(text.bodyPlaceholder, text: $bodyText)
+        TextField(L10n.text("snippets.title", locale: settings.locale), text: $title)
+        TextField(L10n.text("snippets.body", locale: settings.locale), text: $bodyText)
           .onSubmit(add)
-        Button(text.add, action: add)
+        Button(L10n.text("snippets.add", locale: settings.locale), action: add)
       }
       .textFieldStyle(.plain)
       if model.items.isEmpty {
-        Text(text.empty)
+        Text(L10n.text("snippets.empty", locale: settings.locale))
           .frame(maxWidth: .infinity, maxHeight: .infinity)
       } else {
         List {
@@ -91,13 +91,13 @@ struct SnippetsExpanded: View {
                 copiedID = snippet.id
                 let token = snippet.id
                 Task {
-                  try? await Task.sleep(for: .seconds(text.copiedHintSeconds))
+                  try? await Task.sleep(for: .seconds(settings.config.snippets.copiedHintSeconds))
                   if copiedID == token { copiedID = nil }
                 }
               } label: {
                 VStack(alignment: .leading, spacing: 2) {
                   Text(snippet.title)
-                  Text(copiedID == snippet.id ? text.copied : snippet.body)
+                  Text(copiedID == snippet.id ? L10n.text("snippets.copied", locale: settings.locale) : snippet.body)
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.7))
                     .lineLimit(1)
@@ -111,7 +111,7 @@ struct SnippetsExpanded: View {
                 Image(systemName: "xmark.circle.fill")
               }
               .buttonStyle(.plain)
-              .accessibilityLabel("Delete \(snippet.title)")
+              .accessibilityLabel(L10n.format("delete.item", snippet.title, locale: settings.locale))
             }
             .listRowBackground(Color.white.opacity(0.06))
           }

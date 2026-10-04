@@ -19,16 +19,20 @@ final class SettingsModel {
   }
 
   var languageID: String { config.language.selected }
+  var locale: Locale { Locale(identifier: languageID) }
 
   func selectLanguage(_ id: String) {
     guard config.language.options.contains(where: { $0.id == id }) else { return }
     let previous = config.language.selected
-    guard previous != id else { return }
+    let wasFollowingSystem = config.language.followsSystem
+    guard wasFollowingSystem || previous != id else { return }
+    config.language.followsSystem = false
     config.language.selected = id
     do {
       try ConfigStore.save(config, to: fileURL)
     } catch {
       config.language.selected = previous
+      config.language.followsSystem = wasFollowingSystem
       Logger(subsystem: "IslandDock", category: "settings").error("\(error.localizedDescription, privacy: .public)")
     }
   }
@@ -39,7 +43,7 @@ struct SettingsView: View {
 
   var body: some View {
     Form {
-      Picker(model.config.settings.languageTitle, selection: language) {
+      Picker(L10n.text("settings.language", locale: model.locale), selection: language) {
         ForEach(model.config.language.options) { option in
           Text(option.label).tag(option.id)
         }
@@ -48,7 +52,8 @@ struct SettingsView: View {
     }
     .padding(model.config.settings.padding)
     .frame(width: model.config.settings.width)
-    .navigationTitle(model.config.settings.title)
+    .navigationTitle(L10n.text("settings.title", locale: model.locale))
+    .environment(\.locale, model.locale)
   }
 
   private var language: Binding<String> {

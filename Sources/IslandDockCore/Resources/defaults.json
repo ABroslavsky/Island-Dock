@@ -14,9 +14,9 @@
     "fallbackCapsuleHeight": 36
   },
   "modules": [
-    { "id": "timer", "enabled": true, "title": "Focus", "symbol": "timer" },
-    { "id": "snippets", "enabled": true, "title": "Snippets", "symbol": "doc.on.clipboard" },
-    { "id": "todo", "enabled": true, "title": "Todo", "symbol": "checklist" }
+    { "id": "timer", "enabled": true, "symbol": "timer" },
+    { "id": "snippets", "enabled": true, "symbol": "doc.on.clipboard" },
+    { "id": "todo", "enabled": true, "symbol": "checklist" }
   ],
   "files": {
     "snippets": "snippets.json",
@@ -28,44 +28,28 @@
     "presetSeconds": [900, 1500, 3000],
     "maxMinutes": 60,
     "tickSeconds": 1,
-    "completionSound": "Glass",
-    "start": "Start",
-    "pause": "Pause",
-    "reset": "Reset"
+    "completionSound": "Glass"
   },
   "snippets": {
-    "empty": "Nothing saved yet",
-    "add": "Add",
-    "titlePlaceholder": "Title",
-    "bodyPlaceholder": "Text to copy",
-    "copied": "Copied",
     "copiedHintSeconds": 1.2
   },
-  "todo": {
-    "empty": "No tasks",
-    "add": "Add",
-    "placeholder": "New task"
-  },
   "commands": {
-    "show": "Show Island",
-    "quit": "Quit",
-    "pin": "Pin",
-    "unpin": "Unpin",
     "pinSymbol": "pin",
     "unpinSymbol": "pin.fill"
   },
   "settings": {
-    "title": "Settings",
-    "languageTitle": "Language",
-    "menu": "Settings…",
     "shortcut": ",",
     "width": 360,
     "padding": 20
   },
   "language": {
     "selected": "en",
+    "followsSystem": true,
     "options": [
       { "id": "en", "label": "English" },
+      { "id": "de", "label": "Deutsch" },
+      { "id": "fr", "label": "Français" },
+      { "id": "es", "label": "Español" },
       { "id": "ru", "label": "Русский" }
     ]
   }

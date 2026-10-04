@@ -2,11 +2,18 @@ import SwiftUI
 
 struct IslandRootView: View {
   @State private var model: IslandModel
+  var settings: SettingsModel
   let modules: [IslandModuleDescriptor]
   let onLayout: () -> Void
 
-  init(model: IslandModel, modules: [IslandModuleDescriptor], onLayout: @escaping () -> Void) {
+  init(
+    model: IslandModel,
+    modules: [IslandModuleDescriptor],
+    settings: SettingsModel,
+    onLayout: @escaping () -> Void
+  ) {
     _model = State(initialValue: model)
+    self.settings = settings
     self.modules = modules
     self.onLayout = onLayout
   }
@@ -27,6 +34,7 @@ struct IslandRootView: View {
     .clipShape(RoundedRectangle(cornerRadius: model.chrome.cornerRadius, style: .continuous))
     .animation(.snappy, value: model.session.isExpanded)
     .animation(.snappy, value: model.session.activeModuleID)
+    .environment(\.locale, settings.locale)
   }
 
   private var active: IslandModuleDescriptor? {
@@ -66,8 +74,8 @@ struct IslandRootView: View {
             .foregroundStyle(module.id == model.session.activeModuleID ? Color.white : Color.white.opacity(0.4))
         }
         .buttonStyle(.plain)
-        .help(module.title)
-        .accessibilityLabel(module.title)
+        .help(L10n.text("module.\(module.id)", locale: settings.locale))
+        .accessibilityLabel(L10n.text("module.\(module.id)", locale: settings.locale))
       }
       Spacer(minLength: 0)
       Button {
@@ -77,8 +85,8 @@ struct IslandRootView: View {
         Image(systemName: model.session.isPinned ? model.commands.unpinSymbol : model.commands.pinSymbol)
       }
       .buttonStyle(.plain)
-      .help(model.session.isPinned ? model.commands.unpin : model.commands.pin)
-      .accessibilityLabel(model.session.isPinned ? model.commands.unpin : model.commands.pin)
+      .help(L10n.text(model.session.isPinned ? "unpin" : "pin", locale: settings.locale))
+      .accessibilityLabel(L10n.text(model.session.isPinned ? "unpin" : "pin", locale: settings.locale))
     }
   }
 }

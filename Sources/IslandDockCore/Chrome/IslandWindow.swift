@@ -24,7 +24,13 @@ final class IslandPanelController {
   private var hoverTask: Task<Void, Never>?
   private let screenWatch = ScreenWatch()
 
-  init(model: IslandModel, modules: [IslandModuleDescriptor], metrics: FrameMetrics, hoverDelay: TimeInterval) {
+  init(
+    model: IslandModel,
+    modules: [IslandModuleDescriptor],
+    settings: SettingsModel,
+    metrics: FrameMetrics,
+    hoverDelay: TimeInterval
+  ) {
     self.model = model
     self.metrics = metrics
     self.hoverDelay = hoverDelay
@@ -47,7 +53,7 @@ final class IslandPanelController {
     self.panel = panel
 
     let host = NSHostingView(
-      rootView: IslandRootView(model: model, modules: modules, onLayout: { [weak self] in
+      rootView: IslandRootView(model: model, modules: modules, settings: settings, onLayout: { [weak self] in
         self?.layout(animated: true)
       })
     )

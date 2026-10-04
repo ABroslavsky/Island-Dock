@@ -9,8 +9,21 @@ struct ConfigStoreTests {
     #expect(config.modules.map(\.id) == [ModuleID.timer, ModuleID.snippets, ModuleID.todo])
     #expect(config.timer.defaultSeconds == 1500)
     #expect(config.timer.presetSeconds == [900, 1500, 3000])
-    #expect(config.language.selected == "en")
-    #expect(config.language.options.map(\.id) == ["en", "ru"])
+    #expect(config.language.followsSystem)
+    #expect(config.language.options.map(\.id) == ["en", "de", "fr", "es", "ru"])
+    #expect(config.language.selected == ConfigStore.preferredLanguage(
+      among: config.language.options.map(\.id),
+      fallback: "en"
+    ))
+  }
+
+  @Test func systemLanguageMatchesSupportedCatalog() {
+    let ids = ["en", "de", "fr", "es", "ru"]
+    #expect(ConfigStore.preferredLanguage(among: ids, preferences: ["ru-RU"], fallback: "en") == "ru")
+    #expect(ConfigStore.preferredLanguage(among: ids, preferences: ["de-DE"], fallback: "en") == "de")
+    #expect(ConfigStore.preferredLanguage(among: ids, preferences: ["fr-FR"], fallback: "en") == "fr")
+    #expect(ConfigStore.preferredLanguage(among: ids, preferences: ["es-ES"], fallback: "en") == "es")
+    #expect(ConfigStore.preferredLanguage(among: ids, preferences: ["ja-JP"], fallback: "en") == "en")
   }
 
   @Test func oldConfigReceivesLanguageFromDefaults() throws {
@@ -22,8 +35,52 @@ struct ConfigStoreTests {
       object.removeValue(forKey: "settings")
       try JSONSerialization.data(withJSONObject: object).write(to: url, options: .atomic)
       let second = try ConfigStore.load(directoryRoot: root)
-      #expect(second.config.language.selected == "en")
-      #expect(second.config.settings.menu == "Settings…")
+      #expect(second.config.language.followsSystem)
+      #expect(second.config.language.selected == ConfigStore.preferredLanguage(
+        among: second.config.language.options.map(\.id),
+        fallback: "en"
+      ))
+      #expect(second.config.language.options.map(\.id) == ["en", "de", "fr", "es", "ru"])
+      #expect(second.config.settings.shortcut == ",")
+    }
+  }
+
+  @Test func untouchedEnglishSelectionFollowsSystem() throws {
+    try withTempDirectory { root in
+      let first = try ConfigStore.load(directoryRoot: root)
+      let url = first.directory.appending(path: first.config.configFileName)
+      var object = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+      var language = try #require(object["language"] as? [String: Any])
+      language.removeValue(forKey: "followsSystem")
+      language["selected"] = "en"
+      object["language"] = language
+      try JSONSerialization.data(withJSONObject: object).write(to: url, options: .atomic)
+      let second = try ConfigStore.load(directoryRoot: root)
+      #expect(second.config.language.followsSystem)
+      #expect(second.config.language.selected == ConfigStore.preferredLanguage(
+        among: second.config.language.options.map(\.id),
+        fallback: "en"
+      ))
+    }
+  }
+
+  @Test func savedLanguageKeepsSelectionAndGainsNewLanguages() throws {
+    try withTempDirectory { root in
+      let first = try ConfigStore.load(directoryRoot: root)
+      let url = first.directory.appending(path: first.config.configFileName)
+      var object = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+      object["language"] = [
+        "selected": "ru",
+        "options": [
+          ["id": "en", "label": "English"],
+          ["id": "ru", "label": "Русский"],
+        ],
+      ]
+      try JSONSerialization.data(withJSONObject: object).write(to: url, options: .atomic)
+      let second = try ConfigStore.load(directoryRoot: root)
+      #expect(second.config.language.followsSystem == false)
+      #expect(second.config.language.selected == "ru")
+      #expect(second.config.language.options.map(\.id) == ["en", "de", "fr", "es", "ru"])
     }
   }
 
@@ -66,7 +123,7 @@ struct ConfigStoreTests {
 
   @Test func unknownModuleIdIsRejected() throws {
     var config = try sampleConfig()
-    config.modules.append(ModuleConfig(id: "sports", enabled: true, title: "Sports", symbol: "sportscourt"))
+    config.modules.append(ModuleConfig(id: "sports", enabled: true, symbol: "sportscourt"))
     #expect(throws: ConfigError.self) {
       try config.validate(knownModuleIDs: ModuleID.all)
     }

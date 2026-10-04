@@ -99,6 +99,7 @@ struct TimerCompact: View {
 struct TimerExpanded: View {
   let model: TimerModel
   let symbol: String
+  var settings: SettingsModel
 
   var body: some View {
     VStack(spacing: 12) {
@@ -117,11 +118,11 @@ struct TimerExpanded: View {
         }
       }
       HStack {
-        Button(model.clock.isRunning ? model.config.pause : model.config.start) {
+        Button(L10n.text(model.clock.isRunning ? "timer.pause" : "timer.start", locale: settings.locale)) {
           model.toggle()
         }
         .disabled(!model.clock.isRunning && model.clock.remaining(at: .now) <= 0)
-        Button(model.config.reset) { model.reset() }
+        Button(L10n.text("timer.reset", locale: settings.locale)) { model.reset() }
       }
     }
     .buttonStyle(.bordered)

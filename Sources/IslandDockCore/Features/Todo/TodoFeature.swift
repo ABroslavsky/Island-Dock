@@ -72,19 +72,19 @@ struct TodoCompact: View {
 
 struct TodoExpanded: View {
   let model: TodoStore
-  let text: TodoConfig
+  var settings: SettingsModel
   @State private var draft = ""
 
   var body: some View {
     VStack(spacing: 8) {
       HStack {
-        TextField(text.placeholder, text: $draft)
+        TextField(L10n.text("todo.placeholder", locale: settings.locale), text: $draft)
           .textFieldStyle(.plain)
           .onSubmit(add)
-        Button(text.add, action: add)
+        Button(L10n.text("todo.add", locale: settings.locale), action: add)
       }
       if model.items.isEmpty {
-        Text(text.empty)
+        Text(L10n.text("todo.empty", locale: settings.locale))
           .frame(maxWidth: .infinity, maxHeight: .infinity)
       } else {
         List {
@@ -104,7 +104,7 @@ struct TodoExpanded: View {
                 Image(systemName: "xmark.circle.fill")
               }
               .buttonStyle(.plain)
-              .accessibilityLabel("Delete \(item.title)")
+              .accessibilityLabel(L10n.format("delete.item", item.title, locale: settings.locale))
             }
             .listRowBackground(Color.white.opacity(0.06))
           }

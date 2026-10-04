@@ -77,14 +77,21 @@ struct ModuleCatalogTests {
     try withTempDirectory { root in
       var config = try ConfigStore.load(directoryRoot: root).config
       config.modules = [
-        ModuleConfig(id: ModuleID.todo, enabled: true, title: "Todo", symbol: "checklist"),
-        ModuleConfig(id: ModuleID.timer, enabled: false, title: "Focus", symbol: "timer"),
-        ModuleConfig(id: ModuleID.snippets, enabled: true, title: "Snippets", symbol: "doc.on.clipboard"),
+        ModuleConfig(id: ModuleID.todo, enabled: true, symbol: "checklist"),
+        ModuleConfig(id: ModuleID.timer, enabled: false, symbol: "timer"),
+        ModuleConfig(id: ModuleID.snippets, enabled: true, symbol: "doc.on.clipboard"),
       ]
       let timer = try TimerModel(config: config.timer, url: root.appending(path: config.files.timer))
       let snippets = try SnippetStore(url: root.appending(path: config.files.snippets))
       let todos = try TodoStore(url: root.appending(path: config.files.todos))
-      let modules = ModuleCatalog.make(config: config, timer: timer, snippets: snippets, todos: todos)
+      let settings = SettingsModel(config: config, fileURL: root.appending(path: config.configFileName))
+      let modules = ModuleCatalog.make(
+        config: config,
+        settings: settings,
+        timer: timer,
+        snippets: snippets,
+        todos: todos
+      )
       #expect(modules.map(\.id) == [ModuleID.todo, ModuleID.snippets])
       _ = modules[0].compact()
       _ = modules[1].expanded()

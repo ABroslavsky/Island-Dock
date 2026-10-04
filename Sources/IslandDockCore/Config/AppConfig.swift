@@ -11,7 +11,6 @@ struct AppConfig: Codable, Equatable, Sendable {
   var files: FileNames
   var timer: TimerConfig
   var snippets: SnippetsConfig
-  var todo: TodoConfig
   var commands: CommandConfig
   var settings: SettingsConfig
   var language: LanguageConfig
@@ -38,7 +37,7 @@ struct AppConfig: Codable, Equatable, Sendable {
     try check(Set(ids).count == ids.count, "modules.id")
     for module in modules {
       try check(knownModuleIDs.contains(module.id), "modules.id.\(module.id)")
-      try check(!module.title.isEmpty && !module.symbol.isEmpty, "modules")
+      try check(!module.symbol.isEmpty, "modules")
     }
 
     for name in [files.snippets, files.todos, files.timer] {
@@ -50,24 +49,9 @@ struct AppConfig: Codable, Equatable, Sendable {
     try check(timer.tickSeconds > 0, "timer.tickSeconds")
     try check(!timer.presetSeconds.isEmpty && timer.presetSeconds.allSatisfy { $0 > 0 }, "timer.presetSeconds")
     try check(!timer.completionSound.isEmpty, "timer.completionSound")
-    try check(!timer.start.isEmpty && !timer.pause.isEmpty && !timer.reset.isEmpty, "timer.labels")
     try check(snippets.copiedHintSeconds > 0, "snippets.copiedHintSeconds")
-    try check(
-      !snippets.empty.isEmpty && !snippets.add.isEmpty && !snippets.titlePlaceholder.isEmpty
-        && !snippets.bodyPlaceholder.isEmpty && !snippets.copied.isEmpty,
-      "snippets.labels"
-    )
-    try check(!todo.empty.isEmpty && !todo.add.isEmpty && !todo.placeholder.isEmpty, "todo.labels")
-    try check(
-      !commands.show.isEmpty && !commands.quit.isEmpty && !commands.pin.isEmpty && !commands.unpin.isEmpty
-        && !commands.pinSymbol.isEmpty && !commands.unpinSymbol.isEmpty,
-      "commands"
-    )
-    try check(
-      !settings.title.isEmpty && !settings.languageTitle.isEmpty && !settings.menu.isEmpty
-        && settings.shortcut.count == 1 && settings.width > 0 && settings.padding >= 0,
-      "settings"
-    )
+    try check(!commands.pinSymbol.isEmpty && !commands.unpinSymbol.isEmpty, "commands")
+    try check(settings.shortcut.count == 1 && settings.width > 0 && settings.padding >= 0, "settings")
     let languageIDs = language.options.map(\.id)
     try check(!languageIDs.isEmpty && Set(languageIDs).count == languageIDs.count, "language.options")
     try check(language.options.allSatisfy { Self.isAvailableLanguage($0.id) && !$0.label.isEmpty }, "language.options")
@@ -106,7 +90,6 @@ struct ChromeConfig: Codable, Equatable, Sendable {
 struct ModuleConfig: Codable, Equatable, Sendable, Identifiable {
   var id: String
   var enabled: Bool
-  var title: String
   var symbol: String
 }
 
@@ -122,30 +105,13 @@ struct TimerConfig: Codable, Equatable, Sendable {
   var maxMinutes: Double
   var tickSeconds: TimeInterval
   var completionSound: String
-  var start: String
-  var pause: String
-  var reset: String
 }
 
 struct SnippetsConfig: Codable, Equatable, Sendable {
-  var empty: String
-  var add: String
-  var titlePlaceholder: String
-  var bodyPlaceholder: String
-  var copied: String
   var copiedHintSeconds: TimeInterval
 }
 
-struct TodoConfig: Codable, Equatable, Sendable {
-  var empty: String
-  var add: String
-  var placeholder: String
-}
-
 struct SettingsConfig: Codable, Equatable, Sendable {
-  var title: String
-  var languageTitle: String
-  var menu: String
   var shortcut: String
   var width: CGFloat
   var padding: CGFloat
@@ -158,14 +124,11 @@ struct LanguageOption: Codable, Equatable, Sendable, Identifiable {
 
 struct LanguageConfig: Codable, Equatable, Sendable {
   var selected: String
+  var followsSystem: Bool
   var options: [LanguageOption]
 }
 
 struct CommandConfig: Codable, Equatable, Sendable {
-  var show: String
-  var quit: String
-  var pin: String
-  var unpin: String
   var pinSymbol: String
   var unpinSymbol: String
 }

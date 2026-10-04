@@ -33,9 +33,17 @@ enum ConfigStore {
       config = try decodeUser(at: userURL, defaultsData: defaultsData, anchoringTo: defaults)
     } else {
       try defaultsData.write(to: userURL, options: .atomic)
-      config = defaults
+      config = resolveLanguage(defaults)
     }
     return LoadedApp(config: config, directory: directory)
+  }
+
+  static func preferredLanguage(
+    among ids: [String],
+    preferences: [String] = Locale.preferredLanguages,
+    fallback: String
+  ) -> String {
+    Bundle.preferredLocalizations(from: ids, forPreferences: preferences).first ?? fallback
   }
 
   static func save(_ config: AppConfig, to url: URL) throws {
@@ -47,7 +55,22 @@ enum ConfigStore {
     var config = try JSONDecoder.island.decode(AppConfig.self, from: filled)
     config.storageDirectoryName = defaults.storageDirectoryName
     config.configFileName = defaults.configFileName
+    config.language.options = defaults.language.options
+    config = resolveLanguage(config, fallback: defaults.language.selected)
+    if !config.language.options.contains(where: { $0.id == config.language.selected }) {
+      config.language.selected = defaults.language.selected
+    }
     try config.validate(knownModuleIDs: ModuleID.all)
+    return config
+  }
+
+  private static func resolveLanguage(_ config: AppConfig, fallback: String? = nil) -> AppConfig {
+    guard config.language.followsSystem else { return config }
+    var config = config
+    config.language.selected = preferredLanguage(
+      among: config.language.options.map(\.id),
+      fallback: fallback ?? config.language.selected
+    )
     return config
   }
 
@@ -58,6 +81,12 @@ enum ConfigStore {
     }
     for (key, value) in defaultsObject where userObject[key] == nil {
       userObject[key] = value
+    }
+    if var language = userObject["language"] as? [String: Any], language["followsSystem"] == nil {
+      let selected = language["selected"] as? String
+      let factory = (defaultsObject["language"] as? [String: Any])?["selected"] as? String
+      language["followsSystem"] = selected == nil || selected == factory
+      userObject["language"] = language
     }
     return try JSONSerialization.data(withJSONObject: userObject)
   }

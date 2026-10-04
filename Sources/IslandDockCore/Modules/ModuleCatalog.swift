@@ -9,7 +9,6 @@ enum ModuleID {
 
 struct IslandModuleDescriptor: Identifiable {
   let id: String
-  let title: String
   let symbolName: String
   let compact: @MainActor () -> AnyView
   let expanded: @MainActor () -> AnyView
@@ -19,6 +18,7 @@ struct IslandModuleDescriptor: Identifiable {
 enum ModuleCatalog {
   static func make(
     config: AppConfig,
+    settings: SettingsModel,
     timer: TimerModel,
     snippets: SnippetStore,
     todos: TodoStore
@@ -27,28 +27,25 @@ enum ModuleCatalog {
       ModuleID.timer: { entry in
         IslandModuleDescriptor(
           id: entry.id,
-          title: entry.title,
           symbolName: entry.symbol,
           compact: { AnyView(TimerCompact(model: timer, symbol: entry.symbol)) },
-          expanded: { AnyView(TimerExpanded(model: timer, symbol: entry.symbol)) }
+          expanded: { AnyView(TimerExpanded(model: timer, symbol: entry.symbol, settings: settings)) }
         )
       },
       ModuleID.snippets: { entry in
         IslandModuleDescriptor(
           id: entry.id,
-          title: entry.title,
           symbolName: entry.symbol,
           compact: { AnyView(SnippetsCompact(model: snippets, symbol: entry.symbol)) },
-          expanded: { AnyView(SnippetsExpanded(model: snippets, text: config.snippets)) }
+          expanded: { AnyView(SnippetsExpanded(model: snippets, settings: settings)) }
         )
       },
       ModuleID.todo: { entry in
         IslandModuleDescriptor(
           id: entry.id,
-          title: entry.title,
           symbolName: entry.symbol,
           compact: { AnyView(TodoCompact(model: todos, symbol: entry.symbol)) },
-          expanded: { AnyView(TodoExpanded(model: todos, text: config.todo)) }
+          expanded: { AnyView(TodoExpanded(model: todos, settings: settings)) }
         )
       },
     ]
