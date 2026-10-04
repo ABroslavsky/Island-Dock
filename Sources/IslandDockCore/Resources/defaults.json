@@ -1,0 +1,57 @@
+{
+  "appName": "Island Dock",
+  "storageDirectoryName": "Island Dock",
+  "configFileName": "config.json",
+  "statusSymbol": "capsule",
+  "chrome": {
+    "hoverOpenDelay": 0.12,
+    "cornerRadius": 16,
+    "compactPadding": 4,
+    "expandedPadding": 12,
+    "expandedWidth": 440,
+    "expandedHeight": 300,
+    "fallbackCapsuleWidth": 220,
+    "fallbackCapsuleHeight": 36
+  },
+  "modules": [
+    { "id": "timer", "enabled": true, "title": "Focus", "symbol": "timer" },
+    { "id": "snippets", "enabled": true, "title": "Snippets", "symbol": "doc.on.clipboard" },
+    { "id": "todo", "enabled": true, "title": "Todo", "symbol": "checklist" }
+  ],
+  "files": {
+    "snippets": "snippets.json",
+    "todos": "todos.json",
+    "timer": "timer.json"
+  },
+  "timer": {
+    "defaultSeconds": 1500,
+    "presetSeconds": [900, 1500, 3000],
+    "maxMinutes": 60,
+    "tickSeconds": 1,
+    "completionSound": "Glass",
+    "start": "Start",
+    "pause": "Pause",
+    "reset": "Reset"
+  },
+  "snippets": {
+    "empty": "Nothing saved yet",
+    "add": "Add",
+    "titlePlaceholder": "Title",
+    "bodyPlaceholder": "Text to copy",
+    "copied": "Copied",
+    "copiedHintSeconds": 1.2
+  },
+  "todo": {
+    "empty": "No tasks",
+    "add": "Add",
+    "placeholder": "New task"
+  },
+  "commands": {
+    "show": "Show Island",
+    "quit": "Quit",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "pinSymbol": "pin",
+    "unpinSymbol": "pin.fill"
+  }
+}

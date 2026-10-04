@@ -1,0 +1,3 @@
+import IslandDockCore
+
+IslandDockApp.main()
