@@ -122,6 +122,7 @@ private final class Runtime {
       modules: modules,
       settings: settings,
       metrics: config.chrome.frameMetrics,
+      motion: config.motion,
       hoverDelay: config.chrome.hoverOpenDelay
     )
   }

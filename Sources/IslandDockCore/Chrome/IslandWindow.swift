@@ -1,4 +1,5 @@
 import AppKit
+import QuartzCore
 import SwiftUI
 
 extension ScreenSnapshot {
@@ -20,8 +21,11 @@ final class IslandPanelController {
   let model: IslandModel
   let panel: IslandPanel
   private let metrics: FrameMetrics
+  private let motion: MotionConfig
   private let hoverDelay: TimeInterval
   private var hoverTask: Task<Void, Never>?
+  private var morph: Morph?
+  private let ticker = FrameTicker()
   private let screenWatch = ScreenWatch()
 
   init(
@@ -29,10 +33,12 @@ final class IslandPanelController {
     modules: [IslandModuleDescriptor],
     settings: SettingsModel,
     metrics: FrameMetrics,
+    motion: MotionConfig,
     hoverDelay: TimeInterval
   ) {
     self.model = model
     self.metrics = metrics
+    self.motion = motion
     self.hoverDelay = hoverDelay
     let panel = IslandPanel(
       contentRect: NSRect(x: 0, y: 0, width: metrics.fallbackWidth, height: metrics.fallbackHeight),
@@ -42,7 +48,7 @@ final class IslandPanelController {
     )
     panel.isFloatingPanel = true
     panel.level = .statusBar
-    panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
+    panel.collectionBehavior = IslandPanel.spaceBehavior
     panel.isOpaque = false
     panel.backgroundColor = .clear
     panel.hasShadow = false
@@ -82,16 +88,54 @@ final class IslandPanelController {
 
   func show() {
     model.showPinned()
-    layout(animated: false)
+    layout(animated: true)
   }
 
   func layout(animated: Bool) {
     let screens = NSScreen.screens.map(ScreenSnapshot.capture)
     guard let screen = NotchFrame.preferred(among: screens) else { return }
-    let frame = NotchFrame.frame(screen: screen, metrics: metrics, expanded: model.session.isExpanded)
-    panel.setFrame(frame, display: true, animate: animated && panel.frame.width > 1)
-    panel.contentView?.updateTrackingAreas()
+    let compact = NotchFrame.frame(screen: screen, metrics: metrics, expanded: false)
+    let expanded = NotchFrame.frame(screen: screen, metrics: metrics, expanded: true)
+    model.notchCompactHeight = compact.height
+    model.notchExpandedWidth = expanded.width
+    model.notchExpandedHeight = expanded.height
+    let target = model.session.isExpanded ? expanded : compact
     panel.orderFrontRegardless()
+    guard animated, panel.frame.width > 1, panel.frame.integral != target.integral else {
+      morph = nil
+      ticker.stop()
+      panel.setFrame(target, display: true, animate: false)
+      panel.contentView?.updateTrackingAreas()
+      return
+    }
+    morph = Morph(
+      from: panel.frame,
+      to: target,
+      spring: motion.spring(opening: model.session.isExpanded),
+      startedAt: CACurrentMediaTime()
+    )
+    ticker.onFrame = { [weak self] time in
+      self?.step(at: time)
+    }
+    ticker.start(on: panel)
+  }
+
+  private func step(at time: CFTimeInterval) {
+    guard let morph else {
+      ticker.stop()
+      return
+    }
+    let elapsed = max(0, time - morph.startedAt)
+    let frame: CGRect
+    if elapsed >= IslandMorph.settled(morph.spring) {
+      frame = morph.to
+      self.morph = nil
+      ticker.stop()
+    } else {
+      frame = IslandMorph.frame(from: morph.from, to: morph.to, spring: morph.spring, time: elapsed)
+    }
+    panel.setFrame(frame, display: true, animate: false)
+    panel.contentView?.updateTrackingAreas()
   }
 
   private func hover(_ inside: Bool) {
@@ -118,6 +162,40 @@ final class IslandPanelController {
   }
 }
 
+private struct Morph {
+  var from: CGRect
+  var to: CGRect
+  var spring: Spring
+  var startedAt: CFTimeInterval
+}
+
+@MainActor
+private final class FrameTicker: NSObject {
+  var onFrame: ((CFTimeInterval) -> Void)?
+  nonisolated(unsafe) private var link: CADisplayLink?
+
+  func start(on window: NSWindow) {
+    guard link == nil else { return }
+    let link = window.displayLink(target: self, selector: #selector(step))
+    link.add(to: .main, forMode: .common)
+    self.link = link
+  }
+
+  func stop() {
+    link?.invalidate()
+    link = nil
+  }
+
+  @objc nonisolated func step(_ link: CADisplayLink) {
+    let time = link.timestamp
+    MainActor.assumeIsolated {
+      self.onFrame?(time)
+    }
+  }
+
+  deinit { link?.invalidate() }
+}
+
 private final class ScreenWatch: @unchecked Sendable {
   var token: NSObjectProtocol?
   deinit {
@@ -128,6 +206,8 @@ private final class ScreenWatch: @unchecked Sendable {
 }
 
 final class IslandPanel: NSPanel {
+  nonisolated static let spaceBehavior: NSWindow.CollectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
+
   override var canBecomeKey: Bool { true }
   override var canBecomeMain: Bool { false }
 }

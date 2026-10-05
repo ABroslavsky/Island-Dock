@@ -5,7 +5,7 @@
   "statusSymbol": "capsule",
   "chrome": {
     "hoverOpenDelay": 0.12,
-    "cornerRadius": 16,
+    "cornerRadius": 40,
     "compactPadding": 4,
     "expandedPadding": 12,
     "expandedWidth": 440,
@@ -41,6 +41,13 @@
     "shortcut": ",",
     "width": 360,
     "padding": 20
+  },
+  "motion": {
+    "openDuration": 0.5,
+    "openBounce": 0.18,
+    "closeDuration": 0.36,
+    "closeBounce": 0,
+    "contentScale": 0.92
   },
   "language": {
     "selected": "en",

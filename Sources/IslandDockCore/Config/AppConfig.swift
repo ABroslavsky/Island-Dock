@@ -14,6 +14,7 @@ struct AppConfig: Codable, Equatable, Sendable {
   var commands: CommandConfig
   var settings: SettingsConfig
   var language: LanguageConfig
+  var motion: MotionConfig
 
   func validate(knownModuleIDs: Set<String>) throws {
     func check(_ condition: Bool, _ field: String) throws {
@@ -56,6 +57,9 @@ struct AppConfig: Codable, Equatable, Sendable {
     try check(!languageIDs.isEmpty && Set(languageIDs).count == languageIDs.count, "language.options")
     try check(language.options.allSatisfy { Self.isAvailableLanguage($0.id) && !$0.label.isEmpty }, "language.options")
     try check(languageIDs.contains(language.selected), "language.selected")
+    try check(motion.openDuration > 0 && motion.closeDuration > 0, "motion.duration")
+    try check((-1...1).contains(motion.openBounce) && (-1...1).contains(motion.closeBounce), "motion.bounce")
+    try check(motion.contentScale > 0 && motion.contentScale <= 1, "motion.contentScale")
   }
 
   private static func isAvailableLanguage(_ id: String) -> Bool {
@@ -120,6 +124,14 @@ struct SettingsConfig: Codable, Equatable, Sendable {
 struct LanguageOption: Codable, Equatable, Sendable, Identifiable {
   var id: String
   var label: String
+}
+
+struct MotionConfig: Codable, Equatable, Sendable {
+  var openDuration: TimeInterval
+  var openBounce: Double
+  var closeDuration: TimeInterval
+  var closeBounce: Double
+  var contentScale: Double
 }
 
 struct LanguageConfig: Codable, Equatable, Sendable {

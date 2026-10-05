@@ -1,3 +1,4 @@
+import AppKit
 import Testing
 @testable import IslandDockCore
 
@@ -40,6 +41,16 @@ struct IslandSessionTests {
     let session = IslandSession(moduleIDs: [])
     #expect(session.activeModuleID == "")
     #expect(!session.isExpanded)
+  }
+}
+
+struct IslandPanelTests {
+  @Test func panelFollowsSpacesInsteadOfStayingOnScreen() {
+    let behavior = IslandPanel.spaceBehavior
+    #expect(behavior.contains(.canJoinAllSpaces))
+    #expect(behavior.contains(.fullScreenAuxiliary))
+    #expect(behavior.contains(.transient))
+    #expect(!behavior.contains(.stationary))
   }
 }
 

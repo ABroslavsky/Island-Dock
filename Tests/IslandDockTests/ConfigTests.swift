@@ -33,6 +33,7 @@ struct ConfigStoreTests {
       var object = try #require(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
       object.removeValue(forKey: "language")
       object.removeValue(forKey: "settings")
+      object.removeValue(forKey: "motion")
       try JSONSerialization.data(withJSONObject: object).write(to: url, options: .atomic)
       let second = try ConfigStore.load(directoryRoot: root)
       #expect(second.config.language.followsSystem)
@@ -42,6 +43,8 @@ struct ConfigStoreTests {
       ))
       #expect(second.config.language.options.map(\.id) == ["en", "de", "fr", "es", "ru"])
       #expect(second.config.settings.shortcut == ",")
+      #expect(second.config.motion.openDuration == 0.5)
+      #expect(second.config.motion.openBounce == 0.18)
     }
   }
 

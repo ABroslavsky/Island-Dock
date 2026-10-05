@@ -19,21 +19,32 @@ struct IslandRootView: View {
   }
 
   var body: some View {
-    VStack(spacing: 8) {
-      if model.session.isExpanded {
-        switcher
-        activeExpanded
-      } else {
-        activeCompact
+    GeometryReader { geo in
+      let reveal = IslandMorph.reveal(
+        height: geo.size.height,
+        compact: model.notchCompactHeight,
+        expanded: model.notchExpandedHeight
+      )
+      let radius = IslandMorph.radius(
+        reveal: reveal,
+        compactHeight: model.notchCompactHeight,
+        expandedRadius: model.chrome.cornerRadius
+      )
+      ZStack(alignment: .top) {
+        expandedBody
+          .frame(width: model.notchExpandedWidth, height: model.notchExpandedHeight, alignment: .top)
+          .scaleEffect(IslandMorph.contentScale(reveal: reveal, minimum: model.motion.contentScale), anchor: .top)
+          .opacity(reveal)
+          .allowsHitTesting(reveal > 0.5)
+        compactBody
+          .opacity(1 - reveal)
+          .allowsHitTesting(reveal <= 0.5)
       }
+      .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+      .foregroundStyle(.white)
+      .background(Color.black)
+      .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
     }
-    .padding(model.session.isExpanded ? model.chrome.expandedPadding : model.chrome.compactPadding)
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .foregroundStyle(.white)
-    .background(Color.black)
-    .clipShape(RoundedRectangle(cornerRadius: model.chrome.cornerRadius, style: .continuous))
-    .animation(.snappy, value: model.session.isExpanded)
-    .animation(.snappy, value: model.session.activeModuleID)
     .environment(\.locale, settings.locale)
   }
 
@@ -41,7 +52,7 @@ struct IslandRootView: View {
     modules.first { $0.id == model.session.activeModuleID }
   }
 
-  private var activeCompact: some View {
+  private var compactBody: some View {
     Group {
       if let active {
         active.compact()
@@ -49,7 +60,17 @@ struct IslandRootView: View {
         Text(model.appName).font(.caption)
       }
     }
+    .padding(model.chrome.compactPadding)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
+  }
+
+  private var expandedBody: some View {
+    VStack(spacing: 8) {
+      switcher
+      activeExpanded
+    }
+    .padding(model.chrome.expandedPadding)
+    .animation(.spring(duration: model.motion.openDuration, bounce: model.motion.openBounce), value: model.session.activeModuleID)
   }
 
   private var activeExpanded: some View {
